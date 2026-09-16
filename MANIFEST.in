@@ -1,0 +1,6 @@
+include versioneer.py
+include BINDER/_version.py
+include BINDER/*.so
+include BINDER/*.pyd
+recursive-include BINDER *.so *.pyd
+recursive-include BINDER/_internal_resources/testing_files *

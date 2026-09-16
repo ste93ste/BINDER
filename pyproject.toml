@@ -1,0 +1,85 @@
+[build-system]
+requires = [
+    "scikit-build-core>=1.0",
+    "pybind11>=2.12",
+]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "BINDER"
+dynamic = ["version"]
+description = "Bayesian INference for DEformable Registration"
+readme = "README.md"
+requires-python = ">=3.9"
+
+authors = [
+    { name = "Stefano Cerri" },
+    { name = "Amirhossein Hassankhani" },
+    { name = "Koen Van Leemput" },
+]
+
+maintainers = [
+    { name = "Stefano Cerri" },
+    { name = "Amirhossein Hassankhani" },
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "scikit-image",
+    "nibabel",
+    "scipy",
+    "numpy",
+    "matplotlib",
+    "surfa",
+]
+
+# ============================================================================
+# Command-line programs
+# ============================================================================
+
+[project.scripts]
+run_BINDER = "BINDER.cli.run_BINDER:main"
+applyField = "BINDER.cli.applyField:main"
+
+
+# ============================================================================
+# Optional dependencies
+# ============================================================================
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
+
+# ============================================================================
+# scikit-build-core
+# ============================================================================
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+
+cmake.version = ">=3.20"
+cmake.build-type = "Release"
+
+wheel.packages = ["BINDER"]
+
+# Needed because setuptools-scm generates this file
+sdist.include = [
+    "BINDER/_version.py",
+]
+
+
+# ============================================================================
+# Versioning from Git
+# ============================================================================
+
+[[tool.dynamic-metadata]]
+provider = "scikit_build_core.metadata.setuptools_scm"
+
+
+[tool.setuptools_scm]
+write_to = "BINDER/_version.py"
