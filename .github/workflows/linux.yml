@@ -1,0 +1,77 @@
+name: Linux Build
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - v*
+  pull_request:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    if: ${{ startsWith(github.ref, 'refs/tags') || !contains(github.event.head_commit.message, '[skip ci]') }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install Eigen library
+      run: |
+        curl -L https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz -o eigen-3.4.0.tar.gz
+        tar -zxvf eigen-3.4.0.tar.gz
+        mkdir -p /usr/include/eigen3
+        cp -r eigen-3.4.0/Eigen /usr/include/eigen3/
+
+    - name: Install FFTW library
+      run: |
+        curl http://www.fftw.org/fftw-3.3.10.tar.gz --output fftw-3.3.10.tar.gz
+        tar -zxvf fftw-3.3.10.tar.gz
+        cd fftw-3.3.10
+        ./configure --enable-threads --enable-shared
+        make
+        make install
+        # Autotools installs a BROKEN FFTW3Config.cmake (references a
+        # non-existent depends file); newer CMake treats it as fatal.
+        # Remove it so find_package(FFTW3 CONFIG) falls through to
+        # pkg-config/find_library.
+        rm -rf /usr/local/lib/cmake/fftw3
+        # Register /usr/local/lib so libfftw3.so.3.x is found at import time.
+        echo "/usr/local/lib" > /etc/ld.so.conf.d/fftw.conf
+        ldconfig
+        ls -l /usr/local/lib/libfftw3*
+
+    - name: Build BINDER
+      run: |
+        export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+        export LD_RUN_PATH=/usr/local/lib:$LD_RUN_PATH
+        .github/workflows/linux_build.sh /opt/python/cp39-cp39/bin/python
+        .github/workflows/linux_build.sh /opt/python/cp310-cp310/bin/python
+        .github/workflows/linux_build.sh /opt/python/cp311-cp311/bin/python
+        .github/workflows/linux_build.sh /opt/python/cp312-cp312/bin/python
+        ls dist/*.whl | xargs -n1 auditwheel repair
+
+    - name: Test BINDER
+      run: |
+        export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+        cp -r "$GITHUB_WORKSPACE"/BINDER/tests /tmp/BINDERtests
+        for PY in cp39 cp310 cp311 cp312; do
+          /opt/python/$PY-$PY/bin/python -m pip install pytest
+          (cd /tmp && /opt/python/$PY-$PY/bin/python -c "import BINDER; print(BINDER.__file__, BINDER._backend)")
+          (cd /tmp && FORCE_CPU=1 /opt/python/$PY-$PY/bin/python -m pytest /tmp/BINDERtests/cpu/ -q)
+        done
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-wheels
+        path: wheelhouse/*.whl
+
+    - name: Upload to PyPI
+      if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags') }}
+      run: |
+        python -m pip install twine
+        python -m twine upload wheelhouse/*.whl
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}

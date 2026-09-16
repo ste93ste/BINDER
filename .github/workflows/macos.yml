@@ -1,0 +1,81 @@
+name: MacOS Build
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - v*
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    if: ${{ startsWith(github.ref, 'refs/tags') || !contains(github.event.head_commit.message, '[skip ci]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install C/C++ dependencies (Eigen, FFTW, OpenMP)
+        run: brew install eigen fftw libomp
+
+      - name: Set environment for CMake
+        run: |
+          BREW_PREFIX="$(brew --prefix)"
+          echo "CMAKE_PREFIX_PATH=$BREW_PREFIX:$BREW_PREFIX/opt/libomp" >> $GITHUB_ENV
+          echo "OpenMP_ROOT=$BREW_PREFIX/opt/libomp" >> $GITHUB_ENV
+          echo "DYLD_LIBRARY_PATH=$BREW_PREFIX/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+
+      - name: Build and install BINDER
+        run: |
+          WHEELDIR="$(mktemp -d)"
+          python -m pip install --upgrade pip
+          python -m pip wheel . -w "$WHEELDIR" --no-deps \
+            --config-settings=cmake.define.BINDER_FORCE_CPU=ON
+          python -m pip install "$WHEELDIR"/*.whl
+          mkdir -p dist
+          cp "$WHEELDIR"/*.whl dist/
+          (cd /tmp && python -c "import BINDER; print(BINDER.__file__, BINDER._backend)")
+
+      - name: Test BINDER
+        run: |
+          export FORCE_CPU=1
+          python -m pip install pytest
+          cp -r "$GITHUB_WORKSPACE"/BINDER/tests /tmp/BINDERtests
+          (cd /tmp && FORCE_CPU=1 python -m pytest /tmp/BINDERtests/cpu/ -q)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-wheels-py${{ matrix.python-version }}
+          path: dist/*.whl
+
+  publish:
+    needs: build
+    runs-on: macos-latest
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags') }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: macos-wheels-*
+          merge-multiple: true
+          path: dist
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Upload to PyPI
+        run: |
+          python -m pip install twine
+          python -m twine upload dist/*.whl
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
