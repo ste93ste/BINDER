@@ -5,7 +5,7 @@ Bayesian INference for DEformable Registration
 
 | Linux   | Windows    | MacOS |
 |---------|------------|-----|
-| ![Build Status](https://github.com/ste93ste/BINDER_private/actions/workflows/linux.yml/badge.svg) | ![Build Status](https://github.com/ste93ste/BINDER_private/actions/workflows/windows.yml/badge.svg) | ![Build Status](https://github.com/ste93ste/BINDER_private/actions/workflows/macos.yml/badge.svg) |
+| ![Build Status](https://github.com/ste93ste/BINDER/actions/workflows/linux.yml/badge.svg) | ![Build Status](https://github.com/ste93ste/BINDER/actions/workflows/windows.yml/badge.svg) | ![Build Status](https://github.com/ste93ste/BINDER/actions/workflows/macos.yml/badge.svg) |
 
 ## Installation
 
@@ -58,7 +58,7 @@ If you use BINDER in your research, please cite:
 ```bibtex
 @article{cerri_binder,
   title   = {{BINDER}: A Latent Variable Model for Probabilistic Medical Image Registration},
-  author  = {Cerri, Stefano and Hassankhani, Amirhossein and Balbastre, Yael and Van Leemput, Koen},
+  author  = {Cerri, Stefano and Hassankhani, Amirhossein and Balbastre, Ya{\"e}l and Van Leemput, Koen},
   journal = {arXiv preprint arXiv:XXXX.XXXXX},
   year    = {2026}
   }
