@@ -1,6 +1,10 @@
 # BINDER
 Bayesian INference for DEformable Registration
 
+BINDER is a latent-variable model for probabilistic medical image registration. It estimates a deformation field aligning a moving image to a fixed one (and can optionally quantify uncertainty) within a Bayesian framework — supporting 2D and 3D data on both CPU and GPU.
+
+📄 **Paper:** [BINDER: A Latent Variable Model for Probabilistic Medical Image Registration](https://arxiv.org/abs/2609.19875)
+
 ## Build Status
 
 | Linux   | Windows    | MacOS |
@@ -14,7 +18,7 @@ Install the Python package with:
  `pip install .` 
 
 By default, the installation will attempt to install the GPU version (if CUDA is available). 
-If you want to force the CPU installation you can do it by:
+If you want to force the CPU installation, you can do it by:
 
  `pip install . -Ccmake.define.BINDER_FORCE_CPU=ON` 
 
@@ -30,7 +34,7 @@ licensing note below), exclude it from the build with:
 
 ### CPU backend dependencies
 
-The CPU backend requires the [FFTW](https://www.fftw.org/) and [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page) libraries. These are **not** needed for the GPU build. On Linux you can install both with:
+The CPU backend requires the [FFTW](https://www.fftw.org/) and [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page) libraries. These are **not** needed for the GPU build. On Linux, you can install both with:
 
  `sudo apt install libeigen3-dev libfftw3-dev`
 
@@ -42,6 +46,13 @@ The CPU backend requires the [FFTW](https://www.fftw.org/) and [Eigen](https://e
 The main entry point is `run_BINDER`. An example call:
 
 `run_BINDER --moving MovingImage.nii.gz --fixed FixedImage.nii.gz --output outputDirectory --save-warped-image`
+
+To also estimate uncertainty, enable the Gibbs sampler with `--sampler`:
+
+`run_BINDER --moving MovingImage.nii.gz --fixed FixedImage.nii.gz --output outputDirectory --sampler --number-of-burnin 1000000 --number-of-samples 10000000 --save-warped-image`
+
+This runs the sampler after registration and writes `mean_deformation_field_sample.nii.gz`
+and `covariance_field_sample.nii.gz` (the voxel-wise uncertainty) to the output directory.
 
 `applyField.py` warps an image using an already-estimated deformation field.
 
@@ -57,9 +68,11 @@ If you use BINDER in your research, please cite:
 
 ```bibtex
 @article{cerri_binder,
-  title   = {{BINDER}: A Latent Variable Model for Probabilistic Medical Image Registration},
-  author  = {Cerri, Stefano and Hassankhani, Amirhossein and Balbastre, Ya{\"e}l and Van Leemput, Koen},
-  journal = {arXiv preprint arXiv:XXXX.XXXXX},
-  year    = {2026}
-  }
+  title         = {{BINDER}: A Latent Variable Model for Probabilistic Medical Image Registration},
+  author        = {Cerri, Stefano and Hassankhani, Amirhossein and Balbastre, Ya{\"e}l and Van Leemput, Koen},
+  journal       = {arXiv preprint arXiv:2609.19875},
+  eprint        = {2609.19875},
+  archivePrefix = {arXiv},
+  year          = {2026}
+}
 ```
